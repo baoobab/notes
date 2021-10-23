@@ -1,7 +1,8 @@
-from PyQt5 import uic, Qt
+from PyQt5 import uic
 import keyboard
-from PyQt5.QtGui import QTextListFormat, QTextCursor, QTextDocument
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QPushButton, QPlainTextEdit, QTextEdit, QTableWidget
+from PyQt5.Qt import QMenu
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QPushButton, QPlainTextEdit, QTableWidget, \
+    QTableWidgetItem
 import sys
 
 
@@ -10,7 +11,6 @@ class ManageWin(QMainWindow):
         super().__init__()
         self.initUI()
         self.win_count = 0
-        # self.win_list_count = 0
         self.wins = []
 
     def initUI(self):
@@ -40,20 +40,16 @@ class ManageWin(QMainWindow):
             if not i.isVisible():
                 self.wins.pop(self.wins.index(i))
                 self.win_count = 1
+
         if self.sender().text() == 'Создать записку':
             self.wins.append(WinObject(self, 0, self.win_count))
         else:
             self.wins.append(WinObject(self, 1, self.win_count))
         self.wins[-1].show()
 
-    # def create_list_note(self):
-    #     self.win_list_count += 1
-    #     for i in self.wins:
-    #         if not i.isVisible():
-    #             self.wins.pop(self.wins.index(i))
-    #             self.win_list_count = 1
-    #     self.wins.append(Win_List(self, self.win_list_count))
-    #     self.wins[-1].show()
+    def clear_wins(self):
+        self.wins.pop(self.wins[-1])
+        print(self.wins)
 
 
 class WinObject(QMainWindow):
@@ -75,49 +71,31 @@ class WinObject(QMainWindow):
             self.tableWidget: QTableWidget = self.tableWidget
             self.tableWidget.setStyleSheet('font: 12pt; background-color: #F4DEFF')
 
+    def contextMenuEvent(self, event):
+        menu = QMenu(self)
 
-# class WinNote(QMainWindow):
-#     def __init__(self, *args):
-#         super().__init__()
-#         uic.loadUi('ui/win.ui', self)
-#         self.initUI(args)
-#
-#     def initUI(self, args):
-#         self.i = 0
-#         self.setWindowTitle(f"Новая записка {args[-1]}")
-#         self.qwe: QPlainTextEdit = self.qwe
-#         self.qwe.setStyleSheet('font: 12pt; background-color: #FEF9C7')
-#         self.btn2.clicked.connect(self.create_list)
-#         keyboard.add_hotkey('l', self.btn2.click, suppress=False)
-#
-#     def create_list(self):
-#         if self.i == 0:
-#             self.qwe.insertPlainText(f'{1}) ')
-#         else:
-#             self.qwe.insertPlainText(f'\n{self.i + 1}) ')
-#         self.i += 1
-#
-#
-# class WinList(QMainWindow):
-#     def __init__(self, *args):
-#         super().__init__()
-#         uic.loadUi('ui/win_list.ui', self)
-#         self.initUI(args)
-#
-#     def initUI(self, args):
-#         self.i = 0
-#         self.setWindowTitle(f"Новый список {args[-1]}")
-#         self.tableWidget: QTableWidget = self.tableWidget
-#         self.tableWidget.setStyleSheet('font: 12pt; background-color: #F4DEFF')
-#         # self.btn2.clicked.connect(self.create_list)
-#         # keyboard.add_hotkey('ctrl+2', self.btn2.click, suppress=False)
-#
-#     def create_list(self):
-#         if self.i == 0:
-#             self.qwe.insertPlainText(f'{1}) ')
-#         else:
-#             self.qwe.insertPlainText(f'\n{self.i + 1}) ')
-#         self.i += 1
+        action_add = menu.addAction("Добавить строку")
+        action_del = None
+        if self.tableWidget.rowCount() > 0:
+            action_del = menu.addAction("Удалить строку")
+        choice = menu.exec_(self.mapToGlobal(event.pos()))
+        if action_add == choice:
+            self.add_row()
+        if action_del == choice:
+            self.del_row(self.tableWidget.currentRow())
+
+    def add_row(self):
+        self.tableWidget.setRowCount(self.tableWidget.rowCount() + 1)
+        item = QTableWidgetItem()
+        self.tableWidget.setItem(self.tableWidget.rowCount() - 1, 0, item)
+        self.tableWidget.setCurrentItem(item)
+        self.tableWidget.editItem(item)
+
+    def del_row(self, row):
+        self.tableWidget.removeRow(row)
+
+    def closeEvent(self, event):
+        ManageWin.clear_wins(ManageWin)
 
 
 def exception_hook(cls, exception, traceback):
