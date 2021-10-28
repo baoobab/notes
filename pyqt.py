@@ -2,7 +2,7 @@ from PyQt5 import uic
 import keyboard
 from PyQt5.Qt import QMenu
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QPushButton, QPlainTextEdit, QTableWidget, \
-    QTableWidgetItem
+    QTableWidgetItem, QCheckBox, QHBoxLayout, QLayout, QGridLayout
 import sys
 
 
@@ -16,7 +16,6 @@ class ManageWin(QMainWindow):
     def initUI(self):
         self.setGeometry(500, 500, 300, 400)
         self.setWindowTitle("okno")
-
         self.btn = QPushButton('Создать записку', self)
 
         self.btn.resize(100, 100)
@@ -36,11 +35,6 @@ class ManageWin(QMainWindow):
 
     def create_note(self):
         self.win_count += 1
-        for i in self.wins:
-            if not i.isVisible():
-                self.wins.pop(self.wins.index(i))
-                self.win_count = 1
-
         if self.sender().text() == 'Создать записку':
             self.wins.append(WinObject(self, 0, self.win_count))
         else:
@@ -48,8 +42,8 @@ class ManageWin(QMainWindow):
         self.wins[-1].show()
 
     def clear_wins(self):
-        self.wins.pop(self.wins[-1])
-        print(self.wins)
+        self.wins.pop(-1)
+        self.win_count -= 1
 
 
 class WinObject(QMainWindow):
@@ -68,10 +62,22 @@ class WinObject(QMainWindow):
             self.qwe.setStyleSheet('font: 12pt; background-color: #FEF9C7')
         else:
             self.setWindowTitle(f"Новый список {args[-1]}")
+
             self.tableWidget: QTableWidget = self.tableWidget
             self.tableWidget.setStyleSheet('font: 12pt; background-color: #F4DEFF')
+            self.tableWidget.setColumnCount(2)
+
+            self.check = QCheckBox()
+            self.boxex = [self.check]
+
+            b1, b2 = QPushButton(), QPushButton()
+            b1.clicked.connect(self.add_row)
+            b2.clicked.connect(self.del_row)
+            keyboard.add_hotkey('alt+a', b1.click, suppress=False)
+            keyboard.add_hotkey('alt+d', b2.click, suppress=False)
 
     def contextMenuEvent(self, event):
+
         menu = QMenu(self)
 
         action_add = menu.addAction("Добавить строку")
@@ -82,20 +88,23 @@ class WinObject(QMainWindow):
         if action_add == choice:
             self.add_row()
         if action_del == choice:
-            self.del_row(self.tableWidget.currentRow())
+            self.del_row()
 
     def add_row(self):
         self.tableWidget.setRowCount(self.tableWidget.rowCount() + 1)
+        self.tableWidget.setCellWidget(self.tableWidget.rowCount() - 1, 0, QCheckBox())
+        self.boxex.append(self.check)
         item = QTableWidgetItem()
-        self.tableWidget.setItem(self.tableWidget.rowCount() - 1, 0, item)
+        self.tableWidget.setItem(self.tableWidget.rowCount() - 1, 1, item)
         self.tableWidget.setCurrentItem(item)
-        self.tableWidget.editItem(item)
+        self.tableWidget.resizeColumnsToContents()
+        # self.tableWidget.editItem(item)
 
-    def del_row(self, row):
-        self.tableWidget.removeRow(row)
+    def del_row(self):
+        self.tableWidget.removeRow(self.tableWidget.currentRow())
 
     def closeEvent(self, event):
-        ManageWin.clear_wins(ManageWin)
+        win.clear_wins()
 
 
 def exception_hook(cls, exception, traceback):
