@@ -1,9 +1,12 @@
 from PyQt5 import uic
 import keyboard
+import sqlite3
 from PyQt5.Qt import QMenu
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QPushButton, QPlainTextEdit, QTableWidget, \
-    QTableWidgetItem, QCheckBox, QHBoxLayout, QLayout, QGridLayout
+    QTableWidgetItem, QCheckBox
 import sys
+
+db = 'db/db.db'
 
 
 class ManageWin(QMainWindow):
@@ -16,29 +19,41 @@ class ManageWin(QMainWindow):
     def initUI(self):
         self.setGeometry(500, 500, 300, 400)
         self.setWindowTitle("okno")
-        self.btn = QPushButton('Создать записку', self)
+        self.btn = QPushButton('Note', self)
 
         self.btn.resize(100, 100)
         self.btn.move(100, 50)
-        self.btn.clicked.connect(self.create_note)
+        self.btn.clicked.connect(self.create_new_win)
 
         keyboard.add_hotkey('ctrl+1', self.btn.click, suppress=False)
 
-        self.btn3 = QPushButton('Создать список', self)
+        self.btn3 = QPushButton('List', self)
 
         self.btn3.resize(100, 100)
         self.btn3.move(100, 150)
 
-        self.btn3.clicked.connect(self.create_note)
+        self.btn3.clicked.connect(self.create_new_win)
 
         keyboard.add_hotkey('ctrl+2', self.btn3.click, suppress=False)
 
-    def create_note(self):
+    def create_new_win(self):
+
+        win_title = f'New {self.sender().text()} ({self.win_count + 1})'
+        # con = sqlite3.connect(db)
+        # cur = con.cursor()
+        # type_id = cur.execute("SELECT id FROM TYPES WHERE type=?", (self.sender().text(),)).fetchone()
+        # cur.execute("""INSERT INTO windows (type.id, title) VALUES (?, ?)""", (type_id[0], win_title))
+
+        # win_id = cur.lastrowid
+        # print(win_id)
+        # con.commit()
+        # con.close()
+
         self.win_count += 1
-        if self.sender().text() == 'Создать записку':
-            self.wins.append(WinObject(self, 0, self.win_count))
+        if self.sender().text() == 'Note':
+            self.wins.append(WinObject(self, 0, self.win_count, win_title))
         else:
-            self.wins.append(WinObject(self, 1, self.win_count))
+            self.wins.append(WinObject(self, 1, self.win_count, win_title))
         self.wins[-1].show()
 
     def clear_wins(self):
@@ -47,26 +62,28 @@ class ManageWin(QMainWindow):
 
 
 class WinObject(QMainWindow):
-    def __init__(self, *args):
+    def __init__(self, parent, type, win_id, win_title):
         super().__init__()
-        if args[1] == 0:
+        self.type = type
+        self.win_id = win_id
+        self.title = win_title
+        if self.type == 0:
             uic.loadUi('ui/win.ui', self)
         else:
             uic.loadUi('ui/win_list.ui', self)
-        self.initUI(args)
+        self.initUI()
 
-    def initUI(self, args):
-        if args[1] == 0:
-            self.setWindowTitle(f"Новая записка {args[-1]}")
+    def initUI(self):
+        if self.type == 0:
+            self.setWindowTitle(f"{self.title}")
             self.qwe: QPlainTextEdit = self.qwe
             self.qwe.setStyleSheet('font: 12pt; background-color: #FEF9C7')
         else:
-            self.setWindowTitle(f"Новый список {args[-1]}")
+            self.setWindowTitle(f"{self.title}")
 
             self.tableWidget: QTableWidget = self.tableWidget
             self.tableWidget.setStyleSheet('font: 12pt; background-color: #F4DEFF')
             self.tableWidget.setColumnCount(2)
-
             self.check = QCheckBox()
             self.boxex = [self.check]
 
@@ -98,7 +115,6 @@ class WinObject(QMainWindow):
         self.tableWidget.setItem(self.tableWidget.rowCount() - 1, 1, item)
         self.tableWidget.setCurrentItem(item)
         self.tableWidget.resizeColumnsToContents()
-        # self.tableWidget.editItem(item)
 
     def del_row(self):
         self.tableWidget.removeRow(self.tableWidget.currentRow())
