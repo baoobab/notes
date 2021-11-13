@@ -33,13 +33,7 @@
      <number>0</number>
     </property>
     <item>
-     <widget class="QPlainTextEdit" name="qwe">
-      <property name="font">
-       <font>
-        <pointsize>12</pointsize>
-       </font>
-      </property>
-     </widget>
+     <widget class="QPlainTextEdit" name="qwe"/>
     </item>
    </layout>
   </widget>
