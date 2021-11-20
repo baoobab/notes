@@ -9,6 +9,22 @@ import sys
 db = 'db/db.db'
 
 
+def query_to_get(query, params=(), is_insert=False):
+    con = None
+    try:
+        con = sqlite3.connect(db)
+        cur = con.cursor()
+        res = cur.execute(query, params).fetchall()
+        con.close()
+        return res
+    except sqlite3.Error as e:
+        print('Ошибка с бд', e)
+    finally:
+        print('Close connection')
+        if con:
+            con.close()
+
+
 class ManageWin(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -59,7 +75,7 @@ class ManageWin(QMainWindow):
     def open_win(self):
         con = sqlite3.connect(db)
         cur = con.cursor()
-        db_wins = cur.execute("SELECT * FROM windows").fetchall()
+        db_wins = query_to_get("SELECT * FROM windows")
         for obj in db_wins:
             db_win_content = cur.execute("SELECT content FROM notes WHERE window_id=?", (obj[0],)).fetchone()
             if db_win_content != None:
@@ -73,9 +89,9 @@ class ManageWin(QMainWindow):
         win_title = f'New {self.sender().text()} ({self.win_count + 1})'
         con = sqlite3.connect(db)
         cur = con.cursor()
-        type_id = cur.execute("SELECT id FROM TYPES WHERE type=?", (self.sender().text(),)).fetchone()
-        cur.execute("""INSERT INTO windows (type_id, title) VALUES (?, ?)""", (type_id[0], win_title))
-        winn = cur.execute("SELECT id FROM windows").fetchall()
+        type_id = query_to_get("SELECT id FROM TYPES WHERE type=?", (self.sender().text(),))
+        cur.execute("""INSERT INTO windows (type_id, title) VALUES (?, ?)""", (type_id[0][0], win_title))
+        winn = query_to_get("SELECT id FROM windows")
         table_id = winn[-1][0]
         cur.execute("""INSERT INTO notes (window_id, content) VALUES (?, ?)""", (table_id, ''))
         con.commit()
