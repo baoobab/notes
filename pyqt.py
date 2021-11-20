@@ -23,6 +23,7 @@ class ManageWin(QMainWindow):
 
         self.btn.resize(100, 100)
         self.btn.move(100, 50)
+
         self.btn.clicked.connect(self.create_new_win)
 
         keyboard.add_hotkey('ctrl+1', self.btn.click, suppress=False)
@@ -36,16 +37,34 @@ class ManageWin(QMainWindow):
 
         keyboard.add_hotkey('ctrl+2', self.btn3.click, suppress=False)
 
+        self.btndel = QPushButton('Delete all notes', self)
+
+        self.btndel.resize(100, 50)
+        self.btndel.move(100, 350)
+
+        self.btndel.clicked.connect(self.clear_db)
+
+        keyboard.add_hotkey('ctrl+d', self.btndel.click, suppress=False)
+
         self.open_win()
+
+    def clear_db(self):
+        con = sqlite3.connect(db)
+        cur = con.cursor()
+        cur.execute("DELETE FROM windows")
+        cur.execute("DELETE FROM notes")
+        con.commit()
+        con.close()
 
     def open_win(self):
         con = sqlite3.connect(db)
         cur = con.cursor()
-        db_wins = cur.execute("SELECT id, type_id, title FROM windows").fetchall()
+        db_wins = cur.execute("SELECT * FROM windows").fetchall()
         for obj in db_wins:
-            db_win_content = cur.execute("SELECT content FROM notes WHERE id=?", (obj[0],)).fetchone()
+            db_win_content = cur.execute("SELECT content FROM notes WHERE window_id=?", (obj[0],)).fetchone()
             if db_win_content != None:
-                self.wins.append(WinObject(self, obj[1], obj[0], obj[2], obj[0], db_win_content[0]))
+                self.win_count += 1
+                self.wins.append(WinObject(self, obj[1], obj[2], obj[0], db_win_content[0]))
                 self.wins[-1].show()
         con.commit()
         con.close()
@@ -58,35 +77,26 @@ class ManageWin(QMainWindow):
         cur.execute("""INSERT INTO windows (type_id, title) VALUES (?, ?)""", (type_id[0], win_title))
         winn = cur.execute("SELECT id FROM windows").fetchall()
         table_id = winn[-1][0]
+        cur.execute("""INSERT INTO notes (window_id, content) VALUES (?, ?)""", (table_id, ''))
         con.commit()
         con.close()
 
         self.win_count += 1
         if self.sender().text() == 'Note':
-            self.wins.append(WinObject(self, 1, self.win_count, win_title, table_id))
+            self.wins.append(WinObject(self, 1, win_title, table_id))
         else:
-            self.wins.append(WinObject(self, 2, self.win_count, win_title, table_id))
+            self.wins.append(WinObject(self, 2, win_title, table_id))
         self.wins[-1].show()
 
-    def save_win_content(self, table_id, win_content):
-        con = sqlite3.connect(db)
-        cur = con.cursor()
-        windows_id = cur.execute("SELECT id FROM windows WHERE id=?", (table_id,)).fetchall()
-        # windows_id = cur.execute("SELECT id FROM windows").fetchall()
-        cur.execute("""INSERT INTO notes (window_id, content) VALUES (?, ?)""", (windows_id[-1][0], win_content))
-        con.commit()
-        con.close()
-
-    def clear_wins(self, win_id):
-        self.wins.pop(win_id - 1)
+    def clear_wins(self, win_name):
+        self.wins.pop(self.wins.index(win_name))
         self.win_count -= 1
 
 
 class WinObject(QMainWindow):
-    def __init__(self, parent, type, win_id, win_title, table_id, content=None):
+    def __init__(self, parent, type, win_title, table_id, content=None):
         super().__init__()
         self.type = type
-        self.win_id = win_id
         self.title = win_title
         self.table_id = table_id
         self.content = content
@@ -117,6 +127,15 @@ class WinObject(QMainWindow):
             keyboard.add_hotkey('alt+a', b1.click, suppress=False)
             keyboard.add_hotkey('alt+d', b2.click, suppress=False)
 
+    def save_data(self):
+        con = sqlite3.connect(db)
+        cur = con.cursor()
+        if self.type == 1:
+            cur.execute("UPDATE notes SET content = ? WHERE window_id = ?",
+                        (self.qwe.toPlainText(), self.table_id))
+        con.commit()
+        con.close()
+
     def contextMenuEvent(self, event):
         menu = QMenu(self)
         action_add = menu.addAction("Добавить строку")
@@ -145,9 +164,8 @@ class WinObject(QMainWindow):
         self.boxex.pop(self.tableWidget.currentRow())
 
     def closeEvent(self, event):
-        if self.type == 1:
-            win.save_win_content(self.table_id, self.qwe.toPlainText())
-        win.clear_wins(self.win_id)
+        self.save_data()
+        win.clear_wins(self)
 
 
 def exception_hook(cls, exception, traceback):
