@@ -3,7 +3,7 @@ import keyboard
 import sqlite3
 from PyQt5.Qt import QMenu
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QPushButton, QTableWidget, \
-    QTableWidgetItem, QCheckBox, QPlainTextEdit
+    QTableWidgetItem, QCheckBox, QPlainTextEdit, QMessageBox
 import sys
 
 db = 'db/db.db'
@@ -59,9 +59,7 @@ class ManageWin(QMainWindow):
         self.btndel.move(100, 350)
 
         self.btndel.clicked.connect(self.clear_db)
-
         keyboard.add_hotkey('ctrl+d', self.btndel.click, suppress=False)
-
         self.open_win()
 
     def close_wins(self):
@@ -78,6 +76,13 @@ class ManageWin(QMainWindow):
         con.commit()
         con.close()
 
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setText("All notes deleted")
+        msg.setInformativeText('success!')
+        msg.setWindowTitle("Info")
+        msg.exec_()
+
     def open_win(self):
         con = sqlite3.connect(db)
         cur = con.cursor()
@@ -93,6 +98,12 @@ class ManageWin(QMainWindow):
                 self.wins[-1].show()
         con.commit()
         con.close()
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setText("All notes loaded")
+        msg.setInformativeText('success!')
+        msg.setWindowTitle("Info")
+        msg.exec_()
 
     def create_new_win(self):
         win_title = f'New {self.sender().text()} ({self.win_count + 1})'
@@ -150,7 +161,7 @@ class WinObject(QMainWindow):
             self.tableWidget.setColumnCount(2)
             self.boxex = []
 
-            if self.content[0]:
+            if self.content[0] and self.content:
                 self.fill_table()
 
             b1, b2 = QPushButton(), QPushButton()
