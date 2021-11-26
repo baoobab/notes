@@ -64,7 +64,13 @@ class ManageWin(QMainWindow):
 
         self.open_win()
 
+    def close_wins(self):
+        while len(self.wins) > 0:
+            for i in self.wins:
+                i.close()
+
     def clear_db(self):
+        self.close_wins()
         con = sqlite3.connect(db)
         cur = con.cursor()
         cur.execute("DELETE FROM windows")
@@ -80,6 +86,7 @@ class ManageWin(QMainWindow):
             db_win_content = cur.execute("SELECT content FROM notes WHERE window_id=?", (obj[0],)).fetchone()
             if db_win_content != None:
                 self.win_count += 1
+                print(db_win_content[0].split(', '))
                 self.wins.append(WinObject(self, obj[1], obj[2], obj[0], db_win_content[0]))
                 self.wins[-1].show()
         con.commit()
@@ -91,6 +98,7 @@ class ManageWin(QMainWindow):
         cur = con.cursor()
         type_id = query_to_get("SELECT id FROM TYPES WHERE type=?", (self.sender().text(),))
         cur.execute("""INSERT INTO windows (type_id, title) VALUES (?, ?)""", (type_id[0][0], win_title))
+        con.commit()
         winn = query_to_get("SELECT id FROM windows")
         table_id = winn[-1][0]
         cur.execute("""INSERT INTO notes (window_id, content) VALUES (?, ?)""", (table_id, ''))
@@ -107,6 +115,9 @@ class ManageWin(QMainWindow):
     def clear_wins(self, win_name):
         self.wins.pop(self.wins.index(win_name))
         self.win_count -= 1
+
+    def closeEvent(self, event):
+        self.close_wins()
 
 
 class WinObject(QMainWindow):
@@ -149,6 +160,9 @@ class WinObject(QMainWindow):
         if self.type == 1:
             cur.execute("UPDATE notes SET content = ? WHERE window_id = ?",
                         (self.qwe.toPlainText(), self.table_id))
+        else:
+            cur.execute("UPDATE notes SET content = ? WHERE window_id = ?",
+                        (str(self.table_to_list()), self.table_id))
         con.commit()
         con.close()
 
@@ -174,6 +188,34 @@ class WinObject(QMainWindow):
         self.tableWidget.setItem(self.tableWidget.rowCount() - 1, 1, item)
         self.tableWidget.setCurrentItem(item)
         self.tableWidget.resizeColumnsToContents()
+
+    def table_to_list(self):
+        # table = self.tableWidget
+        # result = []
+        # for col in range(table.columnCount()):
+        #     rows = []
+        #     for row in range(table.rowCount()):
+        #         if col == 0:
+        #             item = table.item(row, col)
+        #             print(item, 0)
+        #         else:
+        #             item = table.item(row, col)
+        #             print(item)
+        #         rows.append(item.text() if item else '')
+        #     result.append(rows)
+        # return result
+        result = []
+        for row in range(self.tableWidget.rowCount()):
+            rows = []
+            for col in range(self.tableWidget.columnCount()):
+                if col == 0:
+                    item = self.boxex[row].checkState()
+                    rows.append(item)
+                else:
+                    item = self.tableWidget.item(row, col)
+                    rows.append(item.text() if item else '')
+            result.append(rows)
+        return result
 
     def del_row(self):
         self.tableWidget.removeRow(self.tableWidget.currentRow())
