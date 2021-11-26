@@ -86,8 +86,10 @@ class ManageWin(QMainWindow):
             db_win_content = cur.execute("SELECT content FROM notes WHERE window_id=?", (obj[0],)).fetchone()
             if db_win_content != None:
                 self.win_count += 1
-                print(db_win_content[0].split(', '))
-                self.wins.append(WinObject(self, obj[1], obj[2], obj[0], db_win_content[0]))
+                if obj[1] == 2:
+                    self.wins.append(WinObject(self, obj[1], obj[2], obj[0], db_win_content[0].split('\n')))
+                else:
+                    self.wins.append(WinObject(self, obj[1], obj[2], obj[0], db_win_content[0]))
                 self.wins[-1].show()
         con.commit()
         con.close()
@@ -148,11 +150,18 @@ class WinObject(QMainWindow):
             self.tableWidget.setColumnCount(2)
             self.boxex = []
 
+            if self.content[0]:
+                self.fill_table()
+
             b1, b2 = QPushButton(), QPushButton()
             b1.clicked.connect(self.add_row)
             b2.clicked.connect(self.del_row)
             keyboard.add_hotkey('alt+a', b1.click, suppress=False)
             keyboard.add_hotkey('alt+d', b2.click, suppress=False)
+
+    def fill_table(self):
+        for row in self.content:
+            self.add_row(int(row[0]), row[1:])
 
     def save_data(self):
         con = sqlite3.connect(db)
@@ -178,44 +187,31 @@ class WinObject(QMainWindow):
         if action_del == choice:
             self.del_row()
 
-    def add_row(self):
+    def add_row(self, boxState=0, text=None):
         check = QCheckBox()
         self.tableWidget.setRowCount(self.tableWidget.rowCount() + 1)
         self.tableWidget.setCellWidget(self.tableWidget.rowCount() - 1, 0, check)
+        check.setCheckState(boxState)
         self.boxex.append(check)
 
-        item = QTableWidgetItem()
+        item = QTableWidgetItem(text)
         self.tableWidget.setItem(self.tableWidget.rowCount() - 1, 1, item)
         self.tableWidget.setCurrentItem(item)
         self.tableWidget.resizeColumnsToContents()
 
     def table_to_list(self):
-        # table = self.tableWidget
-        # result = []
-        # for col in range(table.columnCount()):
-        #     rows = []
-        #     for row in range(table.rowCount()):
-        #         if col == 0:
-        #             item = table.item(row, col)
-        #             print(item, 0)
-        #         else:
-        #             item = table.item(row, col)
-        #             print(item)
-        #         rows.append(item.text() if item else '')
-        #     result.append(rows)
-        # return result
-        result = []
+        result = ''
         for row in range(self.tableWidget.rowCount()):
-            rows = []
+            rows = ''
             for col in range(self.tableWidget.columnCount()):
                 if col == 0:
-                    item = self.boxex[row].checkState()
-                    rows.append(item)
+                    rows += str(self.boxex[row].checkState())
                 else:
                     item = self.tableWidget.item(row, col)
-                    rows.append(item.text() if item else '')
-            result.append(rows)
-        return result
+                    rows += str(item.text()) if item else ''
+            result += rows
+            result += '\n'
+        return result[:-1]
 
     def del_row(self):
         self.tableWidget.removeRow(self.tableWidget.currentRow())
