@@ -16,6 +16,8 @@ def query_to_get(query, params=(), is_insert=False):
         cur = con.cursor()
         res = cur.execute(query, params).fetchall()
         con.close()
+        # if is_insert:
+        #     return cur.lastrowid
         return res
     except sqlite3.Error as e:
         print('Ошибка с бд', e)
@@ -98,12 +100,13 @@ class ManageWin(QMainWindow):
                 self.wins[-1].show()
         con.commit()
         con.close()
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Information)
-        msg.setText("All notes loaded")
-        msg.setInformativeText('success!')
-        msg.setWindowTitle("Info")
-        msg.exec_()
+        if len(self.wins) > 0:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setText("All notes loaded")
+            msg.setInformativeText('success!')
+            msg.setWindowTitle("Info")
+            msg.exec_()
 
     def create_new_win(self):
         win_title = f'New {self.sender().text()} ({self.win_count + 1})'
@@ -160,9 +163,9 @@ class WinObject(QMainWindow):
             self.tableWidget.setStyleSheet('font: 12pt; background-color: #F4DEFF')
             self.tableWidget.setColumnCount(2)
             self.boxex = []
-
-            if self.content[0] and self.content:
-                self.fill_table()
+            if self.content:
+                if self.content[0]:
+                    self.fill_table()
 
             b1, b2 = QPushButton(), QPushButton()
             b1.clicked.connect(self.add_row)
@@ -196,7 +199,7 @@ class WinObject(QMainWindow):
         if action_add == choice:
             self.add_row()
         if action_del == choice:
-            self.del_row()
+            self.del_row(self.tableWidget.currentRow())
 
     def add_row(self, boxState=0, text=None):
         check = QCheckBox()
@@ -224,9 +227,9 @@ class WinObject(QMainWindow):
             result += '\n'
         return result[:-1]
 
-    def del_row(self):
-        self.tableWidget.removeRow(self.tableWidget.currentRow())
-        self.boxex.pop(self.tableWidget.currentRow())
+    def del_row(self, cur_row):
+        self.tableWidget.removeRow(cur_row)
+        self.boxex.pop(cur_row)
 
     def closeEvent(self, event):
         self.save_data()
