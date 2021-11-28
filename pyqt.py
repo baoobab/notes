@@ -37,31 +37,28 @@ class ManageWin(QMainWindow):
     def initUI(self):
         self.setGeometry(500, 500, 300, 400)
         self.setWindowTitle("okno")
-        self.btn = QPushButton('Note', self)
 
+        self.btn = QPushButton('Note', self)
         self.btn.resize(100, 100)
         self.btn.move(100, 50)
-
         self.btn.clicked.connect(self.create_new_win)
 
         keyboard.add_hotkey('ctrl+1', self.btn.click, suppress=False)
 
         self.btn3 = QPushButton('List', self)
-
         self.btn3.resize(100, 100)
         self.btn3.move(100, 150)
-
         self.btn3.clicked.connect(self.create_new_win)
 
         keyboard.add_hotkey('ctrl+2', self.btn3.click, suppress=False)
 
         self.btndel = QPushButton('Delete all notes', self)
-
         self.btndel.resize(100, 50)
         self.btndel.move(100, 350)
-
         self.btndel.clicked.connect(self.clear_db)
+
         keyboard.add_hotkey('ctrl+d', self.btndel.click, suppress=False)
+
         self.open_win()
 
     def close_wins(self):
@@ -71,6 +68,7 @@ class ManageWin(QMainWindow):
 
     def clear_db(self):
         self.close_wins()
+
         con = sqlite3.connect(db)
         cur = con.cursor()
         cur.execute("DELETE FROM windows")
@@ -79,7 +77,7 @@ class ManageWin(QMainWindow):
         con.close()
 
         msg = QMessageBox()
-        msg.setIcon(QMessageBox.Information)
+        msg.setIcon(QMessageBox.NoIcon)
         msg.setText("All notes deleted")
         msg.setInformativeText('success!')
         msg.setWindowTitle("Info")
@@ -102,7 +100,7 @@ class ManageWin(QMainWindow):
         con.close()
         if len(self.wins) > 0:
             msg = QMessageBox()
-            msg.setIcon(QMessageBox.Information)
+            msg.setIcon(QMessageBox.NoIcon)
             msg.setText("All notes loaded")
             msg.setInformativeText('success!')
             msg.setWindowTitle("Info")
@@ -143,26 +141,29 @@ class WinObject(QMainWindow):
         self.title = win_title
         self.table_id = table_id
         self.content = content
-        if self.type == 1:
-            uic.loadUi('ui/win.ui', self)
-        else:
-            uic.loadUi('ui/win_list.ui', self)
+        uic.loadUi('ui/win.ui', self)
         self.initUI()
 
     def initUI(self):
         if self.type == 1:
             self.setWindowTitle(f"{self.title}")
-            self.qwe: QPlainTextEdit = self.qwe
+
+            self.qwe = QPlainTextEdit()
+            self.verticalLayout.addWidget(self.qwe)
             self.qwe.setStyleSheet('font: 12pt; background-color: #FEF9C7')
+
             if self.content:
                 self.qwe.setPlainText(self.content)
         else:
             self.setWindowTitle(f"{self.title}")
 
-            self.tableWidget: QTableWidget = self.tableWidget
+            self.tableWidget = QTableWidget()
+            self.verticalLayout.addWidget(self.tableWidget)
             self.tableWidget.setStyleSheet('font: 12pt; background-color: #F4DEFF')
             self.tableWidget.setColumnCount(2)
+
             self.boxex = []
+
             if self.content:
                 if self.content[0]:
                     self.fill_table()
@@ -170,8 +171,14 @@ class WinObject(QMainWindow):
             b1, b2 = QPushButton(), QPushButton()
             b1.clicked.connect(self.add_row)
             b2.clicked.connect(self.del_row)
+
             keyboard.add_hotkey('alt+a', b1.click, suppress=False)
             keyboard.add_hotkey('alt+d', b2.click, suppress=False)
+
+        self.tableWidget.horizontalHeader().hide()
+        self.bt = QPushButton()
+        self.bt.setText('Delete note')
+        self.verticalLayout.addWidget(self.bt)
 
     def fill_table(self):
         for row in self.content:
@@ -191,11 +198,14 @@ class WinObject(QMainWindow):
 
     def contextMenuEvent(self, event):
         menu = QMenu(self)
+
         action_add = menu.addAction("Добавить строку")
         action_del = None
+
         if self.tableWidget.rowCount() > 0:
             action_del = menu.addAction("Удалить строку")
         choice = menu.exec_(self.mapToGlobal(event.pos()))
+
         if action_add == choice:
             self.add_row()
         if action_del == choice:
@@ -203,8 +213,10 @@ class WinObject(QMainWindow):
 
     def add_row(self, boxState=0, text=None):
         check = QCheckBox()
+
         self.tableWidget.setRowCount(self.tableWidget.rowCount() + 1)
         self.tableWidget.setCellWidget(self.tableWidget.rowCount() - 1, 0, check)
+
         check.setCheckState(boxState)
         self.boxex.append(check)
 
