@@ -61,10 +61,13 @@ class ManageWin(QMainWindow):
 
         self.open_win()
 
-    def close_wins(self):
-        while len(self.wins) > 0:
-            for i in self.wins:
-                i.close()
+    def close_wins(self, win=None):
+        if win:
+            self.wins.remove(win)
+        else:
+            while len(self.wins) > 0:
+                for i in self.wins:
+                    i.close()
 
     def clear_db(self):
         self.close_wins()
@@ -161,6 +164,8 @@ class WinObject(QMainWindow):
             self.verticalLayout.addWidget(self.tableWidget)
             self.tableWidget.setStyleSheet('font: 12pt; background-color: #F4DEFF')
             self.tableWidget.setColumnCount(2)
+            self.tableWidget.horizontalHeader().hide()
+            self.tableWidget.horizontalHeader().setStretchLastSection(True)
 
             self.boxex = []
 
@@ -175,10 +180,21 @@ class WinObject(QMainWindow):
             keyboard.add_hotkey('alt+a', b1.click, suppress=False)
             keyboard.add_hotkey('alt+d', b2.click, suppress=False)
 
-        self.tableWidget.horizontalHeader().hide()
         self.bt = QPushButton()
         self.bt.setText('Delete note')
+        self.bt.clicked.connect(self.del_note)
+
         self.verticalLayout.addWidget(self.bt)
+
+    def del_note(self):
+        win.close_wins(self)
+
+        con = sqlite3.connect(db)
+        cur = con.cursor()
+        cur.execute("DELETE FROM windows WHERE id=?", (self.table_id,))
+        cur.execute("DELETE FROM notes WHERE window_id=?", (self.table_id,))
+        con.commit()
+        con.close()
 
     def fill_table(self):
         for row in self.content:
