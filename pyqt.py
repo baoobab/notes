@@ -61,13 +61,10 @@ class ManageWin(QMainWindow):
 
         self.open_win()
 
-    def close_wins(self, win=None):
-        if win:
-            self.wins.remove(win)
-        else:
-            while len(self.wins) > 0:
-                for i in self.wins:
-                    i.close()
+    def close_wins(self):
+        while len(self.wins) > 0:
+            for i in self.wins:
+                i.close()
 
     def clear_db(self):
         self.close_wins()
@@ -187,7 +184,7 @@ class WinObject(QMainWindow):
         self.verticalLayout.addWidget(self.bt)
 
     def del_note(self):
-        win.close_wins(self)
+        win.clear_wins(self)
 
         con = sqlite3.connect(db)
         cur = con.cursor()
